@@ -1,37 +1,171 @@
 # CRUD
 
-#### 介绍
-用MongoDB存储数据，node第三方mongoose操作MongoDB数据库。
+#### 技术：
 
-#### 软件架构
-软件架构说明
+###      MongoDB+mongoose
 
 
-#### 安装教程
 
-1. xxxx
-2. xxxx
-3. xxxx
+##### 关键文件：
 
-#### 使用说明
+student.js
 
-1. xxxx
-2. xxxx
-3. xxxx
+~~~javascript
+let mongoose =require('mongoose')
+let Schema =mongoose.Schema
 
-#### 参与贡献
+mongoose.connect('mongodb://localhost/Student', {useNewUrlParser: true});
 
-1. Fork 本仓库
-2. 新建 Feat_xxx 分支
-3. 提交代码
-4. 新建 Pull Request
+let commentSchema= new Schema({
+    name:{
+       type:String,
+       require:true
+    },
+    gender:{
+        type:Number,
+        enum:[0,1],
+        default:0
+    },
+    hobbies:{
+        type:String,
+    },
+    fruits:{
+        type:String,
+    }
+})
+
+module.exports=mongoose.model('Student',commentSchema)
+
+~~~
+
+router.js
+
+~~~javascript
+/*
+ * 路由模块
+ * */
+let express = require('express')
+let router = express.Router()
+
+let student = require('./student')
+
+router.get('/', function (req, res) {
+    student.find(function (err, students) {
+        if (err) {
+            return res.status(500).send('Serve Error')
+        }
+        res.render('index.html', {
+            students: students
+        })
+    })
+})
+router.get('/students', function (req, res) {
+    student.find(function (err, students) {
+        if (err) {
+            return res.status(500).send('Serve Error')
+        }
+        res.render('index.html', {
+            students: students
+        })
+    })
+
+})
+
+router.get('/students/new', function (req, res) {
+    res.render('new.html')
+})
+
+router.post('/students/new', function (req, res) {
+    //获取表单数据----req.body
+    new student(req.body).save(function (err, ret) {
+        if (err) {
+            return res.status(500).send('Serve Error')
+        }
+        res.redirect('/students')
+    })
+
+})
+
+router.get('/students/edit', function (req, res) {
+    student.findById(req.query.id.replace(/"/g, ''), function (err, student) {
+        if (err) {
+            return res.status(500).send('Serve Error')
+        }
+        res.render('edit.html', {
+            student: student
+        })
+
+    })
+
+})
+
+router.post('/students/edit', function (req, res) {
+    let id = req.body.id.replace(/"/g, '')
+    student.findByIdAndUpdate(id, req.body, function (err) {
+        if (err) {
+            return res.status(500).send('Serve Error')
+        }
+        res.redirect('/students')
+    })
+})
+
+router.get('/students/delete', function (req, res) {
+    let id = req.query.id.replace(/"/g, '')
+    student.findByIdAndRemove(id, function (err) {
+        if (err) {
+            return res.status(500).send('Serve Error')
+        }
+        res.redirect('/students')
+    })
+
+})
 
 
-#### 码云特技
+module.exports = router
 
-1. 使用 Readme\_XXX.md 来支持不同的语言，例如 Readme\_en.md, Readme\_zh.md
-2. 码云官方博客 [blog.gitee.com](https://blog.gitee.com)
-3. 你可以 [https://gitee.com/explore](https://gitee.com/explore) 这个地址来了解码云上的优秀开源项目
-4. [GVP](https://gitee.com/gvp) 全称是码云最有价值开源项目，是码云综合评定出的优秀开源项目
-5. 码云官方提供的使用手册 [https://gitee.com/help](https://gitee.com/help)
-6. 码云封面人物是一档用来展示码云会员风采的栏目 [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
+
+~~~
+
+app.js
+
+~~~ javascript
+/*
+* app.js入口模块
+* --启动服务
+* --做一些服务相关的配置
+* --模板引擎
+* --body-parser -解析表单post请求体
+* --提供静态资源服务
+* --挂在路由--app.use(router)
+* --监听端口号启动服务
+* */
+
+let express= require('express')
+let router=require('./router')
+let bodyParser = require('body-parser')
+
+let app=express()
+
+//公开资源
+app.use(express.static('public'))
+app.use(express.static('node_modules'))
+
+app.engine('html',require('express-art-template'))
+
+// parse application/x-www-form-urlencoded
+app.use(bodyParser.urlencoded({ extended: false }))
+// parse application/json
+app.use(bodyParser.json())
+
+//把路由容器挂载到app服务中
+app.use(router)
+
+
+app.listen(3000,function () {
+    console.log('app is running!')
+})
+
+~~~
+
+
+
